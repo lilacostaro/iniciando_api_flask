@@ -1,7 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
+from flask_restful import Resource, Api
+from habilidades import Habilidades, Habilidades_modify
 import json
 
 app = Flask(__name__)
+api = Api(app)
 
 desenvolvedores = [
     {
@@ -17,14 +20,13 @@ desenvolvedores = [
     {
         'id': 2,
         'nome': 'Barbara',
-        'habilidades': ['PHP', 'RUBY', 'React', 'javaScript']
+        'habilidades': ['PHP', 'Ruby', 'React', 'javaScript']
     }
 ]
 
-# Devolve, altera e deleta um desenvolvedor pelo ID
-@app.route('/dev/<int:id>/', methods=['GET', 'PUT', 'DELETE'])
-def desenvolvedor(id):
-    if request.method == 'GET':
+
+class Desenvolvedor(Resource):
+    def get(self, id):
         try:
             response = desenvolvedores[id]
         except IndexError:
@@ -34,25 +36,32 @@ def desenvolvedor(id):
             mensagem = 'Erro desconhecido. Procure o administrador da API'
             response = {'status': 'erro', 'mensagem': mensagem}
         return response
-    elif request.method == 'PUT':
+
+    def put(self, id):
         dados = json.loads(request.data)
         desenvolvedores[id] = dados
         return dados
-    elif request.method == 'DELETE':
+
+    def delete(self, id):
         desenvolvedores.pop(id)
         return {'status': 'Sucesso', 'mensagem': 'Registro Excluido'}
 
-# Lista todos os desenvolvedores e permite registrar um novo desenvolvedor
-@app.route('/dev/', methods=['POST', 'GET'])
-def lista_desenvolvedores():
-    if request.method == 'POST':
+
+class ListaDesenvolvedores(Resource):
+    def get(self):
+        return desenvolvedores
+
+    def post(self):
         dados = json.loads(request.data)
         posicao = len(desenvolvedores)
         dados['id'] = posicao
         desenvolvedores.append(dados)
         return desenvolvedores[posicao]
-    elif request.method == 'GET':
-        return jsonify(desenvolvedores)
+
+api.add_resource(Desenvolvedor, '/dev/<int:id>')
+api.add_resource(ListaDesenvolvedores, '/dev')
+api.add_resource(Habilidades, '/habilidades')
+api.add_resource(Habilidades_modify, '/habilidades/<int:id>')
 
 if __name__=='__main__':
     app.run(debug=True)
